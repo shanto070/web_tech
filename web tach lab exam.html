@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Article — Comment System (AIUB Web Technologies Lab)</title>
+  <style>
+    :root{--bg:#f6f7fb;--card:#ffffff;--accent:#0b6cf0;--muted:#6b7280;--danger:#d9534f}
+    body{font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:#111; margin:0; padding:32px}
+    .container{max-width:900px;margin:0 auto}
+    .article{background:var(--card);padding:28px;border-radius:12px;box-shadow:0 6px 18px rgba(12,20,40,0.06)}
+    h1{margin:0 0 8px;font-size:20px}
+    p.lead{margin:0 0 18px;color:var(--muted)}
+
+    
+    .comments-panel{margin-top:20px;background:linear-gradient(180deg,#fff,#fbfdff);padding:20px;border-radius:10px;border:1px solid rgba(12,20,40,0.04)}
+    .stats{display:flex;gap:18px;align-items:center;margin-bottom:14px}
+    .stat-card{background:rgba(11,108,240,0.06);padding:10px 14px;border-radius:10px;font-weight:600}
+    .stat-card .small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+
+    form.comment-form{display:grid;gap:10px}
+    .row{display:flex;gap:12px}
+    label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+    input[type=text], input[type=email], textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;background:#fff}
+    textarea{min-height:100px;resize:vertical}
+    .input-group{flex:1}
+    .error{color:var(--danger);font-size:13px;margin-top:6px}
+
+    .actions{display:flex;align-items:center;gap:12px;margin-top:6px}
+    button{background:var(--accent);color:#fff;padding:10px 14px;border-radius:10px;border:0;cursor:pointer}
+    button:disabled{opacity:0.6;cursor:not-allowed}
+
+    
+    .stars{display:inline-flex;gap:6px;align-items:center}
+    .star{font-size:22px;cursor:pointer;user-select:none}
+    .star.active{color:gold}
+    .rating-label{font-size:13px;color:var(--muted);margin-left:8px}
+
+
+    .comments-list{margin-top:18px;display:flex;flex-direction:column;gap:12px}
+    .comment-card{background:rgba(246,247,251,0.9);padding:12px;border-radius:8px;border:1px solid rgba(12,20,40,0.03)}
+    .meta{display:flex;justify-content:space-between;gap:12px;align-items:center}
+    .meta .who{font-weight:700}
+    .meta .when{font-size:13px;color:var(--muted)}
+    .comment-body{margin-top:8px;font-size:15px}
+
+    footer.note{margin-top:14px;font-size:13px;color:var(--muted)}
+
+    @media (max-width:640px){.row{flex-direction:column}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <article class="article">
+      <h1>Enhancing User Engagement Through Modern Web Technologies</h1>
+      <p class="lead">By: AIUB News — 17 November 2025</p>
+      <p> A digital media company that delivers timely news and multimedia content can raise user engagement
+      by adopting performance-first and interactive web technologies. Fast pages (CDNs, optimized images,
+      and lazy loading) reduce bounce and improve retention.</p>
+ <p>
+      Progressive Web App features—offline reading, push notifications, and an installable UI—encourage
+      repeat visits. Real-time updates via Server-Sent Events or WebSockets enable live news tickers and
+      comment streams without full reloads.
+    </p>
+     <p>
+      For multimedia, use adaptive streaming (HLS/DASH) and responsive players; add captions and DVR
+      support for accessibility and convenience. Finally, instrument analytics and run A/B tests to
+      personalize recommendations and iterate on what actually drives engagement.
+    </p>
+      <section class="comments-panel" aria-labelledby="comments-heading">
+        <h2 id="comments-heading">Comments</h2>
+
+        <div class="stats" aria-live="polite">
+          <div class="stat-card" id="total-comments"><span class="small">Total Comments</span><div id="totalCount">0</div></div>
+          <div class="stat-card" id="avg-rating"><span class="small">Average Rating</span><div id="avgValue">No ratings yet</div></div>
+        </div>
+
+        <form id="commentForm" class="comment-form" novalidate>
+          <div class="row">
+            <div class="input-group">
+              <label for="name">Name <span aria-hidden="true">*</span></label>
+              <input id="name" name="name" type="text" aria-required="true" placeholder="Your name" />
+              <div class="error" id="err-name" aria-live="polite"></div>
+            </div>
+
+            <div class="input-group">
+              <label for="email">Email (optional)</label>
+              <input id="email" name="email" type="email" placeholder="you@example.com" />
+              <div class="error" id="err-email" aria-live="polite"></div>
+            </div>
+          </div>
+
+          <div>
+            <label for="comment">Comment <span aria-hidden="true">*</span></label>
+            <textarea id="comment" name="comment" placeholder="Write your comment..."></textarea>
+            <div class="error" id="err-comment" aria-live="polite"></div>
+          </div>
+
+          <div>
+            <label>Rating (optional)</label>
+            <div class="stars" id="starContainer" role="radiogroup" aria-label="Rating">
+              <span class="star" data-value="1" role="radio" aria-checked="false" tabindex="0">☆</span>
+              <span class="star" data-value="2" role="radio" aria-checked="false" tabindex="0">☆</span>
+              <span class="star" data-value="3" role="radio" aria-checked="false" tabindex="0">☆</span>
+              <span class="star" data-value="4" role="radio" aria-checked="false" tabindex="0">☆</span>
+              <span class="star" data-value="5" role="radio" aria-checked="false" tabindex="0">☆</span>
+              <span class="rating-label" id="ratingValue">No rating</span>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="submit" id="submitBtn">Post Comment</button>
+            <div style="color:var(--muted);font-size:13px">Fields marked with * are required</div>
+          </div>
+        </form>
+
+        <div class="comments-list" id="commentsList" aria-live="polite"></div>
+        <footer class="note">Note: Comments are stored in this browser session only.</footer>
+      </section>
+    </article>
+  </div>
+
+  <script>
+    
+    const comments = []; 
+
+    // DOM refs
+    const form = document.getElementById('commentForm');
+    const nameField = document.getElementById('name');
+    const emailField = document.getElementById('email');
+    const commentField = document.getElementById('comment');
+    const submitBtn = document.getElementById('submitBtn');
+
+    const errName = document.getElementById('err-name');
+    const errEmail = document.getElementById('err-email');
+    const errComment = document.getElementById('err-comment');
+
+    const totalCountEl = document.getElementById('totalCount');
+    const avgValueEl = document.getElementById('avgValue');
+    const commentsList = document.getElementById('commentsList');
+
+    
+    let selectedRating = null;
+    const starContainer = document.getElementById('starContainer');
+    const ratingValueLabel = document.getElementById('ratingValue');
+    const stars = Array.from(starContainer.querySelectorAll('.star'));
+
+    function setStars(r){
+      selectedRating = r === null ? null : Number(r);
+      stars.forEach(s=>{
+        const v = Number(s.dataset.value);
+        if(selectedRating && v <= selectedRating){
+          s.textContent = '★'; s.classList.add('active'); s.setAttribute('aria-checked','true');
+        } else { s.textContent = '☆'; s.classList.remove('active'); s.setAttribute('aria-checked','false'); }
+      });
+      ratingValueLabel.textContent = selectedRating ? `${selectedRating} / 5` : 'No rating';
+    }
+
+    
+    setStars(null);
+
+    
+    stars.forEach(s=>{
+      s.addEventListener('click', ()=> setStars(s.dataset.value));
+      s.addEventListener('keydown', (e)=>{
+        if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); setStars(s.dataset.value); }
+        if(e.key === 'ArrowLeft'){ e.preventDefault(); const v = Math.max(1, Number(s.dataset.value)-1); setStars(v); }
+        if(e.key === 'ArrowRight'){ e.preventDefault(); const v = Math.min(5, Number(s.dataset.value)+1); setStars(v); }
+      });
+    });
+
+    
+    function validateName(name){
+      if(!name || name.trim().length === 0) return 'Name should be between 2 and 50 characters';
+      const len = name.trim().length;
+      if(len < 2 || len > 50) return 'Name should be between 2 and 50 characters';
+      return '';
+    }
+    function validateEmail(email){
+      if(!email) return '';
+      
+      if(!/.+@.+\..+/.test(email)) return 'Please enter a valid email address';
+      return '';
+    }
+    function validateComment(c){
+      if(!c || c.trim().length === 0) return 'Comment should between 10 and 500 characters';
+      const len = c.trim().length;
+      if(len < 10 || len > 500) return 'Comment should between 10 and 500 characters';
+      return '';
+    }
+
+    function clearErrors(){ errName.textContent=''; errEmail.textContent=''; errComment.textContent=''; }
+
+    
+    function renderStats(){
+      totalCountEl.textContent = comments.length;
+      const ratings = comments.map(c => Number(c.rating)).filter(r => !!r);
+      if(ratings.length === 0){ avgValueEl.textContent = 'No ratings yet'; }
+      else {
+        const sum = ratings.reduce((a,b)=>a+b,0);
+        const avg = (sum/ratings.length).toFixed(2);
+        avgValueEl.textContent = `${avg} / 5 (${ratings.length} ratings)`;
+      }
+    }
+
+    function renderComments(){
+      commentsList.innerHTML = '';
+      if(comments.length === 0){ commentsList.innerHTML = '<div style="color:var(--muted)">Be the first to comment.</div>'; return; }
+      comments.slice().reverse().forEach(c => {
+        const el = document.createElement('div'); el.className = 'comment-card';
+        const meta = document.createElement('div'); meta.className = 'meta';
+        const who = document.createElement('div'); who.className = 'who'; who.textContent = c.name || 'Anonymous';
+        const when = document.createElement('div'); when.className = 'when'; when.textContent = new Date(c.timestamp).toLocaleString();
+        meta.appendChild(who); meta.appendChild(when);
+
+        const body = document.createElement('div'); body.className = 'comment-body'; body.textContent = c.comment;
+
+        const foot = document.createElement('div'); foot.style.marginTop='8px'; foot.style.fontSize='13px'; foot.style.color='var(--muted)';
+        foot.textContent = c.email ? `Reply via: ${c.email}` : 'No email provided';
+
+        if(c.rating){
+          const ratingEl = document.createElement('div'); ratingEl.style.marginTop='8px'; ratingEl.style.fontWeight='600'; ratingEl.textContent = 'Rating: ' + c.rating + ' / 5';
+          el.appendChild(meta); el.appendChild(body); el.appendChild(ratingEl); el.appendChild(foot);
+        } else { el.appendChild(meta); el.appendChild(body); el.appendChild(foot); }
+
+        commentsList.appendChild(el);
+      });
+    }
+
+    
+    form.addEventListener('submit', (e)=>{
+      e.preventDefault(); clearErrors();
+      const name = nameField.value.trim();
+      const email = emailField.value.trim();
+      const comment = commentField.value.trim();
+
+      let hasError = false;
+      const nameErr = validateName(name);
+      if(nameErr){ errName.textContent = nameErr; hasError = true; }
+      const emailErr = validateEmail(email);
+      if(emailErr){ errEmail.textContent = emailErr; hasError = true; }
+      const commentErr = validateComment(comment);
+      if(commentErr){ errComment.textContent = commentErr; hasError = true; }
+
+      if(hasError) return;
+
+      const newComment = { name, email: email||null, comment, rating: selectedRating||null, timestamp: Date.now() };
+      comments.push(newComment);
+
+      
+      renderStats();
+      renderComments();
+
+      
+      form.reset(); setStars(null);
+
+      
+      commentField.focus();
+    });
+
+    
+    nameField.addEventListener('input', ()=>{ errName.textContent = validateName(nameField.value) });
+    emailField.addEventListener('input', ()=>{ errEmail.textContent = validateEmail(emailField.value) });
+    commentField.addEventListener('input', ()=>{ errComment.textContent = validateComment(commentField.value) });
+
+    
+    renderStats(); renderComments();
+  </script>
+</body>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Article — Comment System (AIUB Web Technologies Lab)</title>
+  <style>
+    :root{--bg:#f6f7fb;--card:#ffffff;--accent:#0b6cf0;--muted:#6b7280;--danger:#d9534f}
+    body{font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:#111; margin:0; padding:32px}
+    .container{max-width:900px;margin:0 auto}
+    .article{background:var(--card);padding:28px;border-radius:12px;box-shadow:0 6px 18px rgba(12,20,40,0.06)}
+    h1{margin:0 0 8px;font-size:20px}
+    p.lead{margin:0 0 18px;color:var(--muted)}
+
+    
+    .comments-panel{margin-top:20px;background:linear-gradient(180deg,#fff,#fbfdff);padding:20px;border-radius:10px;border:1px solid rgba(12,20,40,0.04)}
+    .stats{display:flex;gap:18px;align-items:center;margin-bottom:14px}
+    .stat-card{background:rgba(11,108,240,0.06);padding:10px 14px;border-radius:10px;font-weight:600}
+    .stat-card .small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+
+    form.comment-form{display:grid;gap:10px}
+    .row{display:flex;gap:12px}
+    label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+    input[type=text], input[type=email], textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;background:#fff}
+    textarea{min-height:100px;resize:vertical}
+    .input-group{flex:1}
+    .error{color:var(--danger);font-size:13px;margin-top:6px}
+
+    .actions{display:flex;align-items:center;gap:12px;margin-top:6px}
+    button{background:var(--accent);color:#fff;padding:10px 14px;border-radius:10px;border:0;cursor:pointer}
+    button:disabled{opacity:0.6;cursor:not-allowed}
+
+    
+    .stars{display:inline-flex;gap:6px;align-items:center}
+    .star{font-size:22px;cursor:pointer;user-select:none}
+    .star.active{color:gold}
+    .rating-label{font-size:13px;color:var(--muted);margin-left:8px}
+
+    
+    .comments-list{margin-top:18px;display:flex;flex-direction:column;gap:12px}
+    .comment-card{background:rgba(246,247,251,0.9);padding:12px;border-radius:8px;border:1px solid rgba(12,20,40,0.03)}
+    .meta{display:flex;justify-content:space-between;gap:12px;align-items:center}
+    .meta .who{font-weight:700}
+    .meta .when{font-size:13px;color:var(--muted)}
+    .comment-body{margin-top:8px;font-size:15px}
+
+    footer.note{margin-top:14px;font-size:13px;color:var(--muted)}
+
+    @media (max-width:640px){.row{flex-direction:column}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <article class="article">
+      <h1>Boosting Engagement on News Platforms with Modern Web Technologies</h1>
+      <p class="lead">By: AIUB News — 01 November 2025</p>
+      <p> In today’s digital landscape, online news platforms must combine speed, interactivity, and personalization to retain a global audience. A media company delivering timely articles and multimedia content can enhance user engagement by adopting key web technologies. </p>
+ <p>
+     
+    </p>
+     <p>
+      For multimedia, use adaptive streaming (HLS/DASH) and responsive players; add captions and DVR
+      support for accessibility and convenience. Finally, instrument analytics and run A/B tests to
+      personalize recommendations and iterate on what actually drives engagement.
+    </p>
+      <section class="comments-panel" aria-labelledby="comments-heading">
+        <h2 id="comments-heading">Comments</h2>
+
+        <div class="stats" aria-live="polite">
+          <div class="stat-card" id="total-comments"><span class="small">Total Comments</span><div id="totalCount">0</div></div>
+          <div class="stat-card" id="avg-rating"><span class="small">Average Rating</span><div id="avgValue">No ratings yet</div></div>
+        </div>
+
+        <form id="commentForm" class="comment-form" novalidate>
+          <div class="row">
+            <div class="input-group">
+              <label for="name">Name <span aria-hidden="true">*</span></label>
+              <input id="name" name="name" type="text" aria-required="true" placeholder="Your name" />
+              <div class="error" id="err-name" aria-live="polite"></div>
+            </div>
+
+            <div class="input-group">
+              <label for="email">Email (optional)</label>
+              <input id="email" name="email" type="email" placeholder="you@example.com" />
+              <div class="error" id="err-email" aria-live="polite"></div>
+            </div>
+          </div>
+
+          <div>
+            <label for="comment">Comment <span aria-hidden="true">*</span></label>
+            <textarea id="comment" name="comment" placeholder="Write your comment..."></textarea>
+            <div class="error" id="err-comment" aria-live="polite"></div>
+          </div>
+
+          <div>
+            <label>Rating (optional)</label>
+            <div class="stars" id="starContainer" role="radiogroup" aria-label="Rating">
+              <span class="star" data-value="1" role="radio" aria-checked="false" tabindex="0">☆</span>
+              <span class="star" data-value="2" role="radio" aria-checked="false" tabindex="0">☆</span>
+              <span class="star" data-value="3" role="radio" aria-checked="false" tabindex="0">☆</span>
+              <span class="star" data-value="4" role="radio" aria-checked="false" tabindex="0">☆</span>
+              <span class="star" data-value="5" role="radio" aria-checked="false" tabindex="0">☆</span>
+              <span class="rating-label" id="ratingValue">No rating</span>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="submit" id="submitBtn">Post Comment</button>
+            <div style="color:var(--muted);font-size:13px">Fields marked with * are required</div>
+          </div>
+        </form>
+
+        <div class="comments-list" id="commentsList" aria-live="polite"></div>
+        <footer class="note">Note: Comments are stored in this browser session only.</footer>
+      </section>
+    </article>
+  </div>
+
+  <script>
+    
+    const comments = []; 
+
+    
+    const form = document.getElementById('commentForm');
+    const nameField = document.getElementById('name');
+    const emailField = document.getElementById('email');
+    const commentField = document.getElementById('comment');
+    const submitBtn = document.getElementById('submitBtn');
+
+    const errName = document.getElementById('err-name');
+    const errEmail = document.getElementById('err-email');
+    const errComment = document.getElementById('err-comment');
+
+    const totalCountEl = document.getElementById('totalCount');
+    const avgValueEl = document.getElementById('avgValue');
+    const commentsList = document.getElementById('commentsList');
+
+    
+    let selectedRating = null;
+    const starContainer = document.getElementById('starContainer');
+    const ratingValueLabel = document.getElementById('ratingValue');
+    const stars = Array.from(starContainer.querySelectorAll('.star'));
+
+    function setStars(r){
+      selectedRating = r === null ? null : Number(r);
+      stars.forEach(s=>{
+        const v = Number(s.dataset.value);
+        if(selectedRating && v <= selectedRating){
+          s.textContent = '★'; s.classList.add('active'); s.setAttribute('aria-checked','true');
+        } else { s.textContent = '☆'; s.classList.remove('active'); s.setAttribute('aria-checked','false'); }
+      });
+      ratingValueLabel.textContent = selectedRating ? `${selectedRating} / 5` : 'No rating';
+    }
+
+    
+    setStars(null);
+
+    
+    stars.forEach(s=>{
+      s.addEventListener('click', ()=> setStars(s.dataset.value));
+      s.addEventListener('keydown', (e)=>{
+        if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); setStars(s.dataset.value); }
+        if(e.key === 'ArrowLeft'){ e.preventDefault(); const v = Math.max(1, Number(s.dataset.value)-1); setStars(v); }
+        if(e.key === 'ArrowRight'){ e.preventDefault(); const v = Math.min(5, Number(s.dataset.value)+1); setStars(v); }
+      });
+    });
+
+    
+    function validateName(name){
+      if(!name || name.trim().length === 0) return 'Name should be between 2 and 50 characters';
+      const len = name.trim().length;
+      if(len < 2 || len > 50) return 'Name should be between 2 and 50 characters';
+      return '';
+    }
+    function validateEmail(email){
+      if(!email) return '';
+      
+      if(!/.+@.+\..+/.test(email)) return 'Please enter a valid email address';
+      return '';
+    }
+    function validateComment(c){
+      if(!c || c.trim().length === 0) return 'Comment should between 10 and 500 characters';
+      const len = c.trim().length;
+      if(len < 10 || len > 500) return 'Comment should between 10 and 500 characters';
+      return '';
+    }
+
+    function clearErrors(){ errName.textContent=''; errEmail.textContent=''; errComment.textContent=''; }
+
+    
+    function renderStats(){
+      totalCountEl.textContent = comments.length;
+      const ratings = comments.map(c => Number(c.rating)).filter(r => !!r);
+      if(ratings.length === 0){ avgValueEl.textContent = 'No ratings yet'; }
+      else {
+        const sum = ratings.reduce((a,b)=>a+b,0);
+        const avg = (sum/ratings.length).toFixed(2);
+        avgValueEl.textContent = `${avg} / 5 (${ratings.length} ratings)`;
+      }
+    }
+
+    function renderComments(){
+      commentsList.innerHTML = '';
+      if(comments.length === 0){ commentsList.innerHTML = '<div style="color:var(--muted)">Be the first to comment.</div>'; return; }
+      comments.slice().reverse().forEach(c => {
+        const el = document.createElement('div'); el.className = 'comment-card';
+        const meta = document.createElement('div'); meta.className = 'meta';
+        const who = document.createElement('div'); who.className = 'who'; who.textContent = c.name || 'Anonymous';
+        const when = document.createElement('div'); when.className = 'when'; when.textContent = new Date(c.timestamp).toLocaleString();
+        meta.appendChild(who); meta.appendChild(when);
+
+        const body = document.createElement('div'); body.className = 'comment-body'; body.textContent = c.comment;
+
+        const foot = document.createElement('div'); foot.style.marginTop='8px'; foot.style.fontSize='13px'; foot.style.color='var(--muted)';
+        foot.textContent = c.email ? `Reply via: ${c.email}` : 'No email provided';
+
+        if(c.rating){
+          const ratingEl = document.createElement('div'); ratingEl.style.marginTop='8px'; ratingEl.style.fontWeight='600'; ratingEl.textContent = 'Rating: ' + c.rating + ' / 5';
+          el.appendChild(meta); el.appendChild(body); el.appendChild(ratingEl); el.appendChild(foot);
+        } else { el.appendChild(meta); el.appendChild(body); el.appendChild(foot); }
+
+        commentsList.appendChild(el);
+      });
+    }
+
+    
+    form.addEventListener('submit', (e)=>{
+      e.preventDefault(); clearErrors();
+      const name = nameField.value.trim();
+      const email = emailField.value.trim();
+      const comment = commentField.value.trim();
+
+      let hasError = false;
+      const nameErr = validateName(name);
+      if(nameErr){ errName.textContent = nameErr; hasError = true; }
+      const emailErr = validateEmail(email);
+      if(emailErr){ errEmail.textContent = emailErr; hasError = true; }
+      const commentErr = validateComment(comment);
+      if(commentErr){ errComment.textContent = commentErr; hasError = true; }
+
+      if(hasError) return;
+
+      const newComment = { name, email: email||null, comment, rating: selectedRating||null, timestamp: Date.now() };
+      comments.push(newComment);
+
+      
+      renderStats();
+      renderComments();
+
+      
+      form.reset(); setStars(null);
+
+     
+      commentField.focus();
+    });
+
+    
+    nameField.addEventListener('input', ()=>{ errName.textContent = validateName(nameField.value) });
+    emailField.addEventListener('input', ()=>{ errEmail.textContent = validateEmail(emailField.value) });
+    commentField.addEventListener('input', ()=>{ errComment.textContent = validateComment(commentField.value) });
+
+    
+    renderStats(); renderComments();
+  </script>
+</body>
+</html>
